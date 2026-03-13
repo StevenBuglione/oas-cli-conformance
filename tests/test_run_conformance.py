@@ -1,13 +1,55 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
-import json
 
 from scripts import run_conformance
 
 
 class RunConformanceTests(unittest.TestCase):
+    def _copy_fixture_inputs(self, root: Path) -> None:
+        for relative_path in [
+            "fixtures/discovery/api-catalog.linkset.json",
+            "fixtures/discovery/service-meta.linkset.json",
+            "fixtures/openapi/tickets.openapi.yaml",
+            "fixtures/overlays/tickets.overlay.yaml",
+            "fixtures/workflows/tickets.arazzo.yaml",
+            "fixtures/skills/tickets.skill.json",
+            "fixtures/config/project.cli.json",
+        ]:
+            destination = root / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text((run_conformance.ROOT / relative_path).read_text())
+
+    def _write_fixture_validation_schemas(self, schema_root: Path) -> None:
+        (schema_root / "skill-manifest.schema.json").write_text(json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "required": ["oasCliSkill", "serviceId", "toolGuidance"],
+            "properties": {
+                "oasCliSkill": {"type": "string"},
+                "serviceId": {"type": "string"},
+                "toolGuidance": {"type": "object"},
+            },
+        }))
+        (schema_root / "cli.schema.json").write_text(json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "required": ["cli", "mode", "sources"],
+            "properties": {
+                "cli": {"type": "string"},
+                "mode": {
+                    "type": "object",
+                    "required": ["default"],
+                    "properties": {
+                        "default": {"enum": ["discover", "curated"]},
+                    },
+                },
+                "sources": {"type": "object"},
+            },
+        }))
+
     def test_resolve_schema_root_uses_explicit_path(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             schema_root = Path(temp_dir) / "schemas"
@@ -96,6 +138,56 @@ class RunConformanceTests(unittest.TestCase):
             with mock.patch.object(run_conformance, "ROOT", root):
                 with self.assertRaises(SystemExit):
                     run_conformance.validate_docs_linkage()
+
+    def test_main_fails_when_skill_manifest_fixture_violates_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "conformance"
+            schema_root = Path(temp_dir) / "schemas"
+            root.mkdir()
+            schema_root.mkdir()
+            self._copy_fixture_inputs(root)
+            self._write_fixture_validation_schemas(schema_root)
+
+            skill_manifest_path = root / "fixtures" / "skills" / "tickets.skill.json"
+            skill_manifest = json.loads(skill_manifest_path.read_text())
+            skill_manifest.pop("toolGuidance")
+            skill_manifest_path.write_text(json.dumps(skill_manifest))
+
+            with (
+                mock.patch.object(run_conformance, "ROOT", root),
+                mock.patch.object(run_conformance, "resolve_schema_root", return_value=schema_root),
+                mock.patch.object(run_conformance, "validate_expected_ntc"),
+                mock.patch.object(run_conformance, "validate_compatibility_matrix"),
+                mock.patch.object(run_conformance, "validate_docs_linkage"),
+                mock.patch("sys.argv", ["run_conformance.py"]),
+            ):
+                with self.assertRaisesRegex(SystemExit, r"(?s)tickets\.skill\.json.*toolGuidance"):
+                    run_conformance.main()
+
+    def test_main_fails_when_cli_fixture_violates_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "conformance"
+            schema_root = Path(temp_dir) / "schemas"
+            root.mkdir()
+            schema_root.mkdir()
+            self._copy_fixture_inputs(root)
+            self._write_fixture_validation_schemas(schema_root)
+
+            cli_config_path = root / "fixtures" / "config" / "project.cli.json"
+            cli_config = json.loads(cli_config_path.read_text())
+            cli_config["mode"]["default"] = "invalid"
+            cli_config_path.write_text(json.dumps(cli_config))
+
+            with (
+                mock.patch.object(run_conformance, "ROOT", root),
+                mock.patch.object(run_conformance, "resolve_schema_root", return_value=schema_root),
+                mock.patch.object(run_conformance, "validate_expected_ntc"),
+                mock.patch.object(run_conformance, "validate_compatibility_matrix"),
+                mock.patch.object(run_conformance, "validate_docs_linkage"),
+                mock.patch("sys.argv", ["run_conformance.py"]),
+            ):
+                with self.assertRaisesRegex(SystemExit, r"(?s)project\.cli\.json.*mode\.default.*invalid"):
+                    run_conformance.main()
 
 
 if __name__ == "__main__":
