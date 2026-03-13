@@ -1,7 +1,7 @@
 {
   "catalogVersion": "1.0.0",
-  "generatedAt": "2026-03-12T23:59:59Z",
-  "sourceFingerprint": "demo-fingerprint",
+  "generatedAt": "2026-03-13T23:00:20.488821695Z",
+  "sourceFingerprint": "953d62e07bdede65d278b281e4c15d2fc96a0fb80c27ce9a555caf5854369e57",
   "sources": [
     {
       "id": "ticketsSource",
@@ -9,7 +9,7 @@
       "uri": "../openapi/tickets.openapi.yaml",
       "provenance": {
         "method": "explicit",
-        "at": "2026-03-12T23:59:59Z"
+        "at": "2026-03-13T23:00:20.490163152Z"
       }
     }
   ],
@@ -19,10 +19,100 @@
       "alias": "tickets",
       "sourceId": "ticketsSource",
       "title": "Example Tickets API",
-      "servers": ["https://api.example.com/v1"]
+      "servers": [
+        "https://api.example.com/v1"
+      ]
     }
   ],
   "tools": [
+    {
+      "id": "tickets:archiveTickets",
+      "serviceId": "tickets",
+      "operationId": "archiveTickets",
+      "method": "POST",
+      "path": "/tickets/archive",
+      "group": "tickets",
+      "command": "archive",
+      "summary": "Archive tickets",
+      "hidden": true,
+      "safety": {
+        "destructive": true,
+        "readOnly": false,
+        "requiresApproval": true,
+        "idempotent": false
+      },
+      "servers": [
+        "https://api.example.com/v1"
+      ]
+    },
+    {
+      "id": "tickets:createTicket",
+      "serviceId": "tickets",
+      "operationId": "createTicket",
+      "method": "POST",
+      "path": "/tickets",
+      "group": "tickets",
+      "command": "create",
+      "aliases": [
+        "new-ticket"
+      ],
+      "summary": "Create ticket",
+      "description": "Create a ticket from structured JSON input.",
+      "requestBody": {
+        "required": true,
+        "contentTypes": [
+          {
+            "mediaType": "application/json",
+            "schema": {
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title"
+              ],
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "safety": {
+        "destructive": false,
+        "readOnly": false,
+        "requiresApproval": false,
+        "idempotent": false
+      },
+      "output": {
+        "defaultFields": [
+          "id",
+          "title"
+        ],
+        "redactions": [
+          "requester.email"
+        ]
+      },
+      "guidance": {
+        "whenToUse": [
+          "Need to file a new ticket"
+        ],
+        "avoidWhen": [
+          "You only need to list tickets"
+        ],
+        "examples": [
+          {
+            "goal": "Create a ticket from a JSON payload",
+            "command": "oascli tickets tickets create --body @ticket.json"
+          }
+        ]
+      },
+      "servers": [
+        "https://api.example.com/v1"
+      ]
+    },
     {
       "id": "tickets:getTicket",
       "serviceId": "tickets",
@@ -43,9 +133,12 @@
       "safety": {
         "destructive": false,
         "readOnly": true,
-        "requiresApproval": false
+        "requiresApproval": false,
+        "idempotent": true
       },
-      "servers": ["https://api.example.com/v1"]
+      "servers": [
+        "https://api.example.com/v1"
+      ]
     },
     {
       "id": "tickets:listTickets",
@@ -67,9 +160,34 @@
       "safety": {
         "destructive": false,
         "readOnly": true,
-        "requiresApproval": false
+        "requiresApproval": false,
+        "idempotent": true
       },
-      "servers": ["https://api.example.com/v1"]
+      "pagination": {
+        "style": "cursor",
+        "cursorParam": "cursor"
+      },
+      "retry": {
+        "recommended": true,
+        "locationHeader": true
+      },
+      "guidance": {
+        "whenToUse": [
+          "Need to enumerate recent tickets"
+        ],
+        "avoidWhen": [
+          "You already know the ticket ID"
+        ],
+        "examples": [
+          {
+            "goal": "List open tickets",
+            "command": "oascli tickets tickets list --state open --format json"
+          }
+        ]
+      },
+      "servers": [
+        "https://api.example.com/v1"
+      ]
     }
   ],
   "workflows": [
@@ -93,6 +211,94 @@
       "mode": "discover",
       "tools": [
         {
+          "id": "tickets:archiveTickets",
+          "serviceId": "tickets",
+          "operationId": "archiveTickets",
+          "method": "POST",
+          "path": "/tickets/archive",
+          "group": "tickets",
+          "command": "archive",
+          "summary": "Archive tickets",
+          "hidden": true,
+          "safety": {
+            "destructive": true,
+            "readOnly": false,
+            "requiresApproval": true,
+            "idempotent": false
+          },
+          "servers": [
+            "https://api.example.com/v1"
+          ]
+        },
+        {
+          "id": "tickets:createTicket",
+          "serviceId": "tickets",
+          "operationId": "createTicket",
+          "method": "POST",
+          "path": "/tickets",
+          "group": "tickets",
+          "command": "create",
+          "aliases": [
+            "new-ticket"
+          ],
+          "summary": "Create ticket",
+          "description": "Create a ticket from structured JSON input.",
+          "requestBody": {
+            "required": true,
+            "contentTypes": [
+              {
+                "mediaType": "application/json",
+                "schema": {
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "title"
+                  ],
+                  "type": "object"
+                }
+              }
+            ]
+          },
+          "safety": {
+            "destructive": false,
+            "readOnly": false,
+            "requiresApproval": false,
+            "idempotent": false
+          },
+          "output": {
+            "defaultFields": [
+              "id",
+              "title"
+            ],
+            "redactions": [
+              "requester.email"
+            ]
+          },
+          "guidance": {
+            "whenToUse": [
+              "Need to file a new ticket"
+            ],
+            "avoidWhen": [
+              "You only need to list tickets"
+            ],
+            "examples": [
+              {
+                "goal": "Create a ticket from a JSON payload",
+                "command": "oascli tickets tickets create --body @ticket.json"
+              }
+            ]
+          },
+          "servers": [
+            "https://api.example.com/v1"
+          ]
+        },
+        {
           "id": "tickets:getTicket",
           "serviceId": "tickets",
           "operationId": "getTicket",
@@ -112,9 +318,12 @@
           "safety": {
             "destructive": false,
             "readOnly": true,
-            "requiresApproval": false
+            "requiresApproval": false,
+            "idempotent": true
           },
-          "servers": ["https://api.example.com/v1"]
+          "servers": [
+            "https://api.example.com/v1"
+          ]
         },
         {
           "id": "tickets:listTickets",
@@ -136,9 +345,34 @@
           "safety": {
             "destructive": false,
             "readOnly": true,
-            "requiresApproval": false
+            "requiresApproval": false,
+            "idempotent": true
           },
-          "servers": ["https://api.example.com/v1"]
+          "pagination": {
+            "style": "cursor",
+            "cursorParam": "cursor"
+          },
+          "retry": {
+            "recommended": true,
+            "locationHeader": true
+          },
+          "guidance": {
+            "whenToUse": [
+              "Need to enumerate recent tickets"
+            ],
+            "avoidWhen": [
+              "You already know the ticket ID"
+            ],
+            "examples": [
+              {
+                "goal": "List open tickets",
+                "command": "oascli tickets tickets list --state open --format json"
+              }
+            ]
+          },
+          "servers": [
+            "https://api.example.com/v1"
+          ]
         }
       ]
     },
@@ -147,6 +381,74 @@
       "mode": "curated",
       "tools": [
         {
+          "id": "tickets:createTicket",
+          "serviceId": "tickets",
+          "operationId": "createTicket",
+          "method": "POST",
+          "path": "/tickets",
+          "group": "tickets",
+          "command": "create",
+          "aliases": [
+            "new-ticket"
+          ],
+          "summary": "Create ticket",
+          "description": "Create a ticket from structured JSON input.",
+          "requestBody": {
+            "required": true,
+            "contentTypes": [
+              {
+                "mediaType": "application/json",
+                "schema": {
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "title"
+                  ],
+                  "type": "object"
+                }
+              }
+            ]
+          },
+          "safety": {
+            "destructive": false,
+            "readOnly": false,
+            "requiresApproval": false,
+            "idempotent": false
+          },
+          "output": {
+            "defaultFields": [
+              "id",
+              "title"
+            ],
+            "redactions": [
+              "requester.email"
+            ]
+          },
+          "guidance": {
+            "whenToUse": [
+              "Need to file a new ticket"
+            ],
+            "avoidWhen": [
+              "You only need to list tickets"
+            ],
+            "examples": [
+              {
+                "goal": "Create a ticket from a JSON payload",
+                "command": "oascli tickets tickets create --body @ticket.json"
+              }
+            ]
+          },
+          "servers": [
+            "https://api.example.com/v1"
+          ]
+        },
+        {
           "id": "tickets:getTicket",
           "serviceId": "tickets",
           "operationId": "getTicket",
@@ -166,9 +468,12 @@
           "safety": {
             "destructive": false,
             "readOnly": true,
-            "requiresApproval": false
+            "requiresApproval": false,
+            "idempotent": true
           },
-          "servers": ["https://api.example.com/v1"]
+          "servers": [
+            "https://api.example.com/v1"
+          ]
         },
         {
           "id": "tickets:listTickets",
@@ -190,9 +495,34 @@
           "safety": {
             "destructive": false,
             "readOnly": true,
-            "requiresApproval": false
+            "requiresApproval": false,
+            "idempotent": true
           },
-          "servers": ["https://api.example.com/v1"]
+          "pagination": {
+            "style": "cursor",
+            "cursorParam": "cursor"
+          },
+          "retry": {
+            "recommended": true,
+            "locationHeader": true
+          },
+          "guidance": {
+            "whenToUse": [
+              "Need to enumerate recent tickets"
+            ],
+            "avoidWhen": [
+              "You already know the ticket ID"
+            ],
+            "examples": [
+              {
+                "goal": "List open tickets",
+                "command": "oascli tickets tickets list --state open --format json"
+              }
+            ]
+          },
+          "servers": [
+            "https://api.example.com/v1"
+          ]
         }
       ]
     }

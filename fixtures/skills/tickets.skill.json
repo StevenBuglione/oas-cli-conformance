@@ -1,0 +1,27 @@
+{
+  "oasCliSkill": "1.0.0",
+  "serviceId": "tickets",
+  "summary": "Guidance for using the Tickets API through OAS-CLI",
+  "toolGuidance": {
+    "tickets:listTickets": {
+      "whenToUse": ["Need to enumerate recent tickets"],
+      "avoidWhen": ["You already know the ticket ID"],
+      "examples": [
+        {
+          "goal": "List open tickets",
+          "command": "oascli tickets tickets list --state open --format json"
+        }
+      ]
+    },
+    "tickets:createTicket": {
+      "whenToUse": ["Need to file a new ticket"],
+      "avoidWhen": ["You only need to list tickets"],
+      "examples": [
+        {
+          "goal": "Create a ticket from a JSON payload",
+          "command": "oascli tickets tickets create --body @ticket.json"
+        }
+      ]
+    }
+  }
+}

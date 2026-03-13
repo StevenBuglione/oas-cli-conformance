@@ -3,6 +3,12 @@ actions:
   - target: "$.paths['/tickets'].get"
     update:
       x-cli-name: list
+      x-cli-pagination:
+        style: cursor
+        cursorParam: cursor
+      x-cli-retry:
+        recommended: true
+        locationHeader: true
       x-cli-safety:
         readOnly: true
         destructive: false
@@ -10,3 +16,28 @@ actions:
   - target: "$.paths['/tickets'].get.parameters[?(@.name=='status')]"
     update:
       x-cli-name: state
+  - target: "$.paths['/tickets'].post"
+    update:
+      x-cli-name: create
+      x-cli-aliases: [new-ticket]
+      x-cli-description: "Create a ticket from structured JSON input."
+      x-cli-output:
+        defaultFields: [id, title]
+        redactions: [requester.email]
+      x-cli-safety:
+        destructive: false
+        readOnly: false
+        requiresApproval: false
+        idempotent: false
+  - target: "$.paths['/tickets/archive'].post"
+    update:
+      x-cli-name: archive
+      x-cli-hidden: true
+      x-cli-safety:
+        destructive: true
+        readOnly: false
+        requiresApproval: true
+  - target: "$.paths['/admin/tickets'].delete"
+    update:
+      x-cli-name: purge
+      x-cli-ignore: true

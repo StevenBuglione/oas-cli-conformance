@@ -64,6 +64,7 @@ def validate_fixture_shapes() -> None:
     yaml.safe_load((ROOT / "fixtures" / "openapi" / "tickets.openapi.yaml").read_text())
     yaml.safe_load((ROOT / "fixtures" / "overlays" / "tickets.overlay.yaml").read_text())
     yaml.safe_load((ROOT / "fixtures" / "workflows" / "tickets.arazzo.yaml").read_text())
+    load_json(ROOT / "fixtures" / "skills" / "tickets.skill.json")
     load_json(ROOT / "fixtures" / "config" / "project.cli.json")
 
 

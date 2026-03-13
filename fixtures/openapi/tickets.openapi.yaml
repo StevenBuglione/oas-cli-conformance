@@ -18,6 +18,25 @@ paths:
       responses:
         "200":
           description: OK
+    post:
+      operationId: createTicket
+      tags: [tickets]
+      summary: Create ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Created
   /tickets/{id}:
     get:
       operationId: getTicket
@@ -32,3 +51,19 @@ paths:
       responses:
         "200":
           description: OK
+  /tickets/archive:
+    post:
+      operationId: archiveTickets
+      tags: [tickets]
+      summary: Archive tickets
+      responses:
+        "202":
+          description: Accepted
+  /admin/tickets:
+    delete:
+      operationId: purgeTickets
+      tags: [admin]
+      summary: Purge tickets
+      responses:
+        "204":
+          description: Deleted

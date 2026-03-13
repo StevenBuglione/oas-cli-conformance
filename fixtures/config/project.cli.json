@@ -13,6 +13,7 @@
       "source": "ticketsSource",
       "alias": "tickets",
       "overlays": ["../overlays/tickets.overlay.yaml"],
+      "skills": ["../skills/tickets.skill.json"],
       "workflows": ["../workflows/tickets.arazzo.yaml"]
     }
   },
@@ -28,7 +29,7 @@
   "curation": {
     "toolSets": {
       "sandbox-default": {
-        "allow": ["tickets:listTickets", "tickets:getTicket"],
+        "allow": ["tickets:listTickets", "tickets:getTicket", "tickets:createTicket"],
         "deny": ["**"]
       }
     }
