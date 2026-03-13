@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import yaml
+
 from scripts import run_conformance
 
 
@@ -188,6 +190,60 @@ class RunConformanceTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(SystemExit, r"(?s)project\.cli\.json.*mode\.default.*invalid"):
                     run_conformance.main()
+
+    def test_validate_fixture_shapes_fails_when_config_references_missing_skill_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "conformance"
+            schema_root = Path(temp_dir) / "schemas"
+            root.mkdir()
+            schema_root.mkdir()
+            self._copy_fixture_inputs(root)
+            self._write_fixture_validation_schemas(schema_root)
+
+            cli_config_path = root / "fixtures" / "config" / "project.cli.json"
+            cli_config = json.loads(cli_config_path.read_text())
+            cli_config["services"]["tickets"]["skills"] = ["../skills/DOES-NOT-EXIST.json"]
+            cli_config_path.write_text(json.dumps(cli_config))
+
+            with mock.patch.object(run_conformance, "ROOT", root):
+                with self.assertRaisesRegex(SystemExit, r"DOES-NOT-EXIST\.json"):
+                    run_conformance.validate_fixture_shapes(schema_root)
+
+    def test_validate_fixture_shapes_fails_when_openapi_fixture_lacks_expected_request_body_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "conformance"
+            schema_root = Path(temp_dir) / "schemas"
+            root.mkdir()
+            schema_root.mkdir()
+            self._copy_fixture_inputs(root)
+            self._write_fixture_validation_schemas(schema_root)
+
+            openapi_path = root / "fixtures" / "openapi" / "tickets.openapi.yaml"
+            document = yaml.safe_load(openapi_path.read_text())
+            del document["paths"]["/tickets"]["post"]["requestBody"]
+            openapi_path.write_text(yaml.safe_dump(document, sort_keys=False))
+
+            with mock.patch.object(run_conformance, "ROOT", root):
+                with self.assertRaisesRegex(SystemExit, r"createTicket.*requestBody"):
+                    run_conformance.validate_fixture_shapes(schema_root)
+
+    def test_validate_fixture_shapes_fails_when_overlay_fixture_omits_expected_cli_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "conformance"
+            schema_root = Path(temp_dir) / "schemas"
+            root.mkdir()
+            schema_root.mkdir()
+            self._copy_fixture_inputs(root)
+            self._write_fixture_validation_schemas(schema_root)
+
+            overlay_path = root / "fixtures" / "overlays" / "tickets.overlay.yaml"
+            document = yaml.safe_load(overlay_path.read_text())
+            document["actions"][0]["update"].pop("x-cli-pagination")
+            overlay_path.write_text(yaml.safe_dump(document, sort_keys=False))
+
+            with mock.patch.object(run_conformance, "ROOT", root):
+                with self.assertRaisesRegex(SystemExit, r"x-cli-pagination"):
+                    run_conformance.validate_fixture_shapes(schema_root)
 
 
 if __name__ == "__main__":
