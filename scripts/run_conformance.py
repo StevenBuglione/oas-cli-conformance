@@ -58,13 +58,22 @@ def validate_compatibility_matrix(schema_root: Path) -> None:
         ))
 
 
-def validate_fixture_shapes() -> None:
+def validate_fixture_shapes(schema_root: Path) -> None:
+    cli_schema = load_json(schema_root / "cli.schema.json")
+    cli_validator = Draft202012Validator(cli_schema)
     load_json(ROOT / "fixtures" / "discovery" / "api-catalog.linkset.json")
     load_json(ROOT / "fixtures" / "discovery" / "service-meta.linkset.json")
     yaml.safe_load((ROOT / "fixtures" / "openapi" / "tickets.openapi.yaml").read_text())
     yaml.safe_load((ROOT / "fixtures" / "overlays" / "tickets.overlay.yaml").read_text())
     yaml.safe_load((ROOT / "fixtures" / "workflows" / "tickets.arazzo.yaml").read_text())
-    load_json(ROOT / "fixtures" / "config" / "project.cli.json")
+    for config_path in sorted((ROOT / "fixtures" / "config").glob("*.cli.json")):
+        document = load_json(config_path)
+        errors = sorted(cli_validator.iter_errors(document), key=lambda error: list(error.path))
+        if errors:
+            raise SystemExit("\n".join(
+                [f"{config_path.relative_to(ROOT)} failed schema validation:"]
+                + [f"  - {'.'.join(str(part) for part in error.path) or '<root>'}: {error.message}" for error in errors]
+            ))
 
 
 def validate_docs_linkage() -> None:
@@ -100,7 +109,7 @@ def main() -> None:
     args = parser.parse_args()
 
     schema_root = resolve_schema_root(args.schema_root)
-    validate_fixture_shapes()
+    validate_fixture_shapes(schema_root)
     validate_expected_ntc(schema_root)
     validate_compatibility_matrix(schema_root)
     validate_docs_linkage()

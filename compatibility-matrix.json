@@ -6,15 +6,18 @@
     {
       "repo": "https://github.com/StevenBuglione/oas-cli-go",
       "version": "main",
-      "status": "passing",
+      "status": "partial",
       "features": {
         "httpCaching": "passing",
         "refresh": "passing",
         "observabilityHooks": "passing",
-        "compatibilityMatrix": "passing"
+        "compatibilityMatrix": "passing",
+        "mcpTransports": "partial",
+        "oauthRuntime": "partial"
       },
       "notes": [
-        "Reference implementation status after the 2026-03-13 spec completion pass."
+        "Reference implementation status after the native MCP + OAuth implementation pass.",
+        "oas-cli-go runtime verification is green, but oas-cli-conformance does not yet mechanically enforce those runtime checks."
       ]
     }
   ]
